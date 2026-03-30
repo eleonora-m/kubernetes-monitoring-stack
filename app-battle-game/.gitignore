@@ -1,1 +1,39 @@
-node_modules
+# Secrets and Credentials
+secret.yaml
+*.secret.yaml
+.env
+*.pem
+*.key
+*.cert
+*.crt
+kubeconfig
+*.kubeconfig
+
+# Ansible
+*.retry
+*.log
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.tfstate.lock.info
+crash.log
+
+# Kubernetes and Helm
+charts/
+tmp/
+
+# macOS System Files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+
+# Dependencies and Caches
+node_modules/
+__pycache__/
