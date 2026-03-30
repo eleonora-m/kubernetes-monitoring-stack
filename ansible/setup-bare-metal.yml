@@ -1,0 +1,59 @@
+---
+- name: Setup Kubernetes Master Node
+  hosts: master-server
+  become: yes
+  tasks:
+
+    # Шаг 1: Подготовка системы
+    - name: Disable swap
+      command: swapoff -a
+
+    - name: Remove swap from fstab
+      replace:
+        path: /etc/fstab
+        regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
+        replace: '# \1'
+
+    # Шаг 2: Установка среды для запуска контейнеров (Container Runtime)
+    - name: Install containerd
+      apt:
+        name: containerd
+        state: present
+
+    # Шаг 3: Добавление официальных репозиториев Кубернетеса
+    - name: Add Kubernetes apt repository
+      apt_repository:
+        repo: "deb http://apt.kubernetes.io/ kubernetes-xenial main"
+        state: present
+
+    # Шаг 4: Установка главных компонентов
+    - name: Install kubelet, kubeadm, and kubectl
+      apt:
+        name:
+          - kubelet
+          - kubeadm
+          - kubectl
+        state: present
+
+    # Шаг 5: Та самая инициализация кластера
+    - name: Initialize Kubernetes cluster using kubeadm
+      command: kubeadm init --pod-network-cidr=192.168.0.0/16
+      register: kubeadm_output # Сохраняем вывод команды, чтобы потом достать токен
+
+    # Шаг 6: Настройка доступов для пользователя (чтобы работала команда kubectl)
+    - name: Create .kube directory for user
+      file:
+        path: "/home/nora/.kube"
+        state: directory
+
+    - name: Copy admin.conf to user's kube config
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: "/home/nora/.kube/config"
+        remote_src: yes
+        owner: nora
+
+    # Шаг 7: Установка сетевого плагина (чтобы поды могли общаться друг с другом)
+    - name: Install Calico network plugin
+      command: kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
+      become_user: nora
