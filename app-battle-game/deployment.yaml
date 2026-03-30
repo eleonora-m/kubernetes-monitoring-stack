@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: battle-game-deployment
+  labels:
+    app: battle-game
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: battle-game
+  template:
+    metadata:
+      labels:
+        app: battle-game
+    spec:
+      containers:
+      - name: battle-game-container
+        image: eleonora-battle-game:v1
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 3000
