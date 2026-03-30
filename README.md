@@ -1,90 +1,77 @@
-[k8s_README.md](https://github.com/user-attachments/files/25528252/k8s_README.md)
-# 📊 Kubernetes Monitoring Stack
+```markdown
+# 🎮 Kubernetes Monitored Game Deployment: NodeJS "Battle"
 
-Production-grade monitoring stack deployed on Kubernetes (EKS) using Prometheus and Grafana.  
-Implements full observability: metrics collection, alerting, and dashboards.
+This project showcases a complete DevOps lifecycle: deploying a real NodeJS multiplayer game ("Battle") to a local Kubernetes cluster and implementing a production-grade monitoring stack using Prometheus and Grafana.
 
-## 🏗️ Architecture
+## 💡 Project Vision
+Instead of monitoring an idle cluster, this project deploys a live OpenSource NodeJS application. This allows for end-to-end observability, measuring actual application performance, request rates, and resource utilization in a realistic scenario.
 
-```
-EKS Cluster
-├── monitoring/ (namespace)
-│   ├── Prometheus (metrics collection)
-│   │   └── AlertManager (alerting rules)
-│   └── Grafana (dashboards + visualization)
-└── app/ (namespace)
-    └── sample-app (monitored application)
-```
+## 🔄 Architecture Evolution (Cloud to Bare-Metal)
+This repository demonstrates infrastructure adaptability, specifically transitioning from a managed cloud environment to an on-premise (bare-metal) simulation:
 
-## 🛠️ Technologies
-- **Kubernetes** (EKS / any cluster)
-- **Prometheus** — metrics scraping and storage
-- **Grafana** — dashboards and visualization
-- **AlertManager** — alert routing and notifications
-- **Helm** — package management
+* **☁️ Phase 1: Cloud (AWS EKS)**
+  * Initial proof-of-concept deployed on AWS Elastic Kubernetes Service.
+  * Kubernetes resources (Deployments, Services, ConfigMaps) were managed via manual YAML manifests.
+  * *(These legacy manifests are preserved in the `legacy-eks-manifests/` directory for reference).*
+
+* **🖥️ Phase 2: Bare-Metal / Local Environment (Current)**
+  * Rebuilt locally using **Docker Desktop Kubernetes** to simulate an on-premise, air-gapped-friendly infrastructure.
+  * **Target Workload:** The NodeJS "Battle" game containerized and deployed.
+  * **Monitoring Stack:** Transitioned to **Helm** charts for Prometheus and Grafana, aligning with industry standards for managing complex workloads on self-hosted servers.
+  * **Automation:** Added basic **Ansible** playbooks to demonstrate configuration management readiness for bare-metal nodes.
+
+## 🛠️ Technologies Used
+* **Kubernetes** (AWS EKS & Docker Desktop)
+* **NodeJS & Docker** — Application runtime and containerization
+* **Prometheus** — Metrics scraping and time-series storage
+* **Grafana** — Dashboards and visualization
+* **Helm** — Package management for K8s
+* **Ansible** — Infrastructure automation
 
 ## 📂 Project Structure
-```
+```text
 kubernetes-monitoring-stack/
-├── namespace.yaml            # Monitoring namespace
-├── prometheus/
-│   ├── configmap.yaml        # Prometheus config + alert rules
-│   ├── deployment.yaml       # Prometheus deployment
-│   └── service.yaml          # Prometheus service
-├── grafana/
-│   ├── deployment.yaml       # Grafana deployment
-│   └── service.yaml          # Grafana service
-├── alertmanager/
-│   ├── configmap.yaml        # AlertManager config
-│   └── deployment.yaml       # AlertManager deployment
+├── app-battle-game/          # K8s manifests for the NodeJS application
+│   ├── deployment.yaml
+│   └── service.yaml
+├── monitoring-helm/          # Helm values and custom Grafana dashboards
+│   └── grafana-dashboard.json 
+├── legacy-eks-manifests/     # Original manual YAML manifests from Phase 1
+│   ├── prometheus/
+│   ├── grafana/
+│   └── alertmanager/
+├── ansible/                  # Automation playbooks
+│   └── setup-nodes.yaml 
 └── README.md
 ```
 
-## 🚀 Usage
+## 🚀 Deployment Instructions
 
+### 1. Deploy the Target Application ("Battle" Game)
 ```bash
-# 1. Clone the repo
-git clone https://github.com/eleonora-m/kubernetes-monitoring-stack
-cd kubernetes-monitoring-stack
-
-# 2. Create monitoring namespace
-kubectl apply -f namespace.yaml
-
-# 3. Deploy Prometheus
-kubectl apply -f prometheus/
-
-# 4. Deploy Grafana
-kubectl apply -f grafana/
-
-# 5. Deploy AlertManager
-kubectl apply -f alertmanager/
-
-# 6. Access Grafana dashboard
-kubectl port-forward svc/grafana 3000:3000 -n monitoring
-# Open http://localhost:3000  (admin/admin)
-
-# 7. Access Prometheus
-kubectl port-forward svc/prometheus 9090:9090 -n monitoring
-# Open http://localhost:9090
+kubectl create namespace game-ns
+kubectl apply -f app-battle-game/ -n game-ns
 ```
 
-## 📈 What Gets Monitored
-- CPU and memory usage per pod and node
-- HTTP request rate and error rate
-- Pod restart count and availability
-- Node disk usage and network I/O
+### 2. Deploy the Monitoring Stack (Helm)
+Ensure Helm is installed, then deploy the Prometheus community stack:
+```bash
+helm repo add prometheus-community [https://prometheus-community.github.io/helm-charts](https://prometheus-community.github.io/helm-charts)
+helm repo update
 
-## 🔔 Alerting Rules Included
-- **HighCPUUsage** — CPU > 80% for 5 minutes
-- **PodCrashLooping** — pod restarting repeatedly
-- **NodeNotReady** — cluster node goes down
-- **HighMemoryUsage** — memory > 85%
+helm install monitoring prometheus-community/kube-prometheus-stack \
+  --namespace monitoring --create-namespace
+```
 
-## 📊 Key Results
-- Reduced mean time to detection (MTTD) by **30%**
-- Achieved **99.9% uptime** with proactive alerting
-- Centralized visibility across all cluster workloads
+### 3. Access the Environments
+* **Game:** `kubectl port-forward svc/battle-game-service 8080:80 -n game-ns`
+* **Grafana:** `kubectl port-forward svc/monitoring-grafana 3000:80 -n monitoring`
 
-## 👩‍💻 Author
-**Eleonora Musaeva** — Cloud Administrator | DevOps Engineer  
-📧 devops.nora@gmail.com
+## 🔔 Key Observability Metrics Captured
+* **Node Availability & Pod Uptime**
+* **CPU/Memory Utilization** (Impact of the game load on the cluster)
+* **HTTP Request Rates & Error Rates** (Application stability)
+
+---
+**👩‍💻 Author:** Eleonora Musaeva | Cloud & DevOps Engineer | [GitHub](https://github.com/eleonora-m)
+```
