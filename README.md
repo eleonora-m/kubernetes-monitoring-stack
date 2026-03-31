@@ -1,77 +1,82 @@
-```markdown
 # 🎮 Kubernetes Monitored Game Deployment: NodeJS "Battle"
 
-This project showcases a complete DevOps lifecycle: deploying a real NodeJS multiplayer game ("Battle") to a local Kubernetes cluster and implementing a production-grade monitoring stack using Prometheus and Grafana.
+This project showcases a complete DevOps lifecycle: deploying a real NodeJS multiplayer game ("Battle") to a local Kubernetes cluster and implementing a production-grade observability stack using Prometheus and Grafana via Helm.
 
 ## 💡 Project Vision
-Instead of monitoring an idle cluster, this project deploys a live OpenSource NodeJS application. This allows for end-to-end observability, measuring actual application performance, request rates, and resource utilization in a realistic scenario.
+Instead of monitoring an idle cluster, this project deploys a live OpenSource NodeJS application. This allows for end-to-end observability, measuring actual application performance and resource utilization in a realistic scenario.
 
 ## 🔄 Architecture Evolution (Cloud to Bare-Metal)
-This repository demonstrates infrastructure adaptability, specifically transitioning from a managed cloud environment to an on-premise (bare-metal) simulation:
+This repository demonstrates infrastructure adaptability, transitioning from managed environments to bare-metal simulation:
 
 * **☁️ Phase 1: Cloud (AWS EKS)**
-  * Initial proof-of-concept deployed on AWS Elastic Kubernetes Service.
-  * Kubernetes resources (Deployments, Services, ConfigMaps) were managed via manual YAML manifests.
-  * *(These legacy manifests are preserved in the `legacy-eks-manifests/` directory for reference).*
+  * Initial proof-of-concept for AWS Elastic Kubernetes Service.
+  * *(Legacy manifests are preserved in the `legacy-eks-manifests/` directory).*
 
 * **🖥️ Phase 2: Bare-Metal / Local Environment (Current)**
-  * Rebuilt locally using **Docker Desktop Kubernetes** to simulate an on-premise, air-gapped-friendly infrastructure.
-  * **Target Workload:** The NodeJS "Battle" game containerized and deployed.
-  * **Monitoring Stack:** Transitioned to **Helm** charts for Prometheus and Grafana, aligning with industry standards for managing complex workloads on self-hosted servers.
-  * **Automation:** Added basic **Ansible** playbooks to demonstrate configuration management readiness for bare-metal nodes.
+  * Local simulation using **Docker Desktop Kubernetes**.
+  * **Monitoring Stack:** Utilizes **Helm** for deploying the `kube-prometheus-stack`, aligning with industry standards for complex deployments.
+  * **Infrastructure as Code (IaC):** Includes **Ansible** playbooks to demonstrate readiness for bootstrapping real bare-metal nodes (disabling swap, installing containerd, initializing the control plane via `kubeadm`).
 
 ## 🛠️ Technologies Used
-* **Kubernetes** (AWS EKS & Docker Desktop)
+* **Kubernetes** — Container orchestration
 * **NodeJS & Docker** — Application runtime and containerization
-* **Prometheus** — Metrics scraping and time-series storage
-* **Grafana** — Dashboards and visualization
-* **Helm** — Package management for K8s
-* **Ansible** — Infrastructure automation
+* **Prometheus & Grafana** — Metrics scraping and dashboard visualization
+* **Helm** — K8s Package management
+* **Ansible** — Infrastructure configuration management
 
 ## 📂 Project Structure
 ```text
 kubernetes-monitoring-stack/
-├── app-battle-game/          # K8s manifests for the NodeJS application
+├── ansible/                  # Ansible playbooks for bare-metal bootstrapping
+│   ├── inventory.ini
+│   ├── setup-bare-metal.yml  # Prepares all nodes (containerd, swapoff)
+│   └── setup-master-node.yml # Initializes control plane (kubeadm init)
+├── app-battle-game/          # K8s manifests for the NodeJS game
 │   ├── deployment.yaml
-│   └── service.yaml
-├── monitoring-helm/          # Helm values and custom Grafana dashboards
-│   └── grafana-dashboard.json 
-├── legacy-eks-manifests/     # Original manual YAML manifests from Phase 1
-│   ├── prometheus/
-│   ├── grafana/
-│   └── alertmanager/
-├── ansible/                  # Automation playbooks
-│   └── setup-nodes.yaml 
+│   ├── service.yaml
+│   ├── configmap.yaml
+│   └── secret.yaml           # Note: Ignored in git for security
+├── legacy-eks-manifests/     # Reference manifests from Phase 1
 └── README.md
-```
 
-## 🚀 Deployment Instructions
 
-### 1. Deploy the Target Application ("Battle" Game)
-```bash
-kubectl create namespace game-ns
-kubectl apply -f app-battle-game/ -n game-ns
-```
+🚀 Deployment Instructions
+1. Deploy the Target Application
 
-### 2. Deploy the Monitoring Stack (Helm)
-Ensure Helm is installed, then deploy the Prometheus community stack:
-```bash
+The application is deployed to the default namespace.
+
+Bash
+kubectl apply -f app-battle-game/deployment.yaml
+kubectl apply -f app-battle-game/service.yaml
+kubectl apply -f app-battle-game/configmap.yaml
+2. Deploy the Monitoring Stack (Helm)
+
+Ensure Helm is installed, then deploy the Prometheus community stack into a dedicated namespace:
+
+Bash
 helm repo add prometheus-community [https://prometheus-community.github.io/helm-charts](https://prometheus-community.github.io/helm-charts)
 helm repo update
 
-helm install monitoring prometheus-community/kube-prometheus-stack \
+helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
   --namespace monitoring --create-namespace
-```
+3. Access the Environments (Port Forwarding)
 
-### 3. Access the Environments
-* **Game:** `kubectl port-forward svc/battle-game-service 8080:80 -n game-ns`
-* **Grafana:** `kubectl port-forward svc/monitoring-grafana 3000:80 -n monitoring`
+Since this is a local setup, use port-forwarding to access the services:
 
-## 🔔 Key Observability Metrics Captured
-* **Node Availability & Pod Uptime**
-* **CPU/Memory Utilization** (Impact of the game load on the cluster)
-* **HTTP Request Rates & Error Rates** (Application stability)
+Game UI: kubectl port-forward svc/battle-game-service 8080:80
+(Access at http://localhost:8080)
 
----
-**👩‍💻 Author:** Eleonora Musaeva | Cloud & DevOps Engineer | [GitHub](https://github.com/eleonora-m)
-```
+Grafana Dashboards: kubectl port-forward svc/kube-prometheus-stack-grafana 3000:80 -n monitoring
+(Access at http://localhost:3000)
+
+Prometheus UI: kubectl port-forward svc/kube-prometheus-stack-prometheus 9090:9090 -n monitoring
+(Access at http://localhost:9090)
+
+🔔 Key Observability Metrics Captured
+Pod CPU/Memory Utilization (Monitored via cAdvisor/kubelet)
+
+Cluster Component Health
+
+Deployment Replica Status
+
+👩‍💻 Author: Eleonora Musaeva | Cloud & DevOps Engineer | GitHub
